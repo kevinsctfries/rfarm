@@ -11,10 +11,6 @@ impl Polygon {
         Polygon { tiles: points }
     }
 
-    pub fn from_points(points: Vec<Point>) -> Polygon {
-        Self::new(points)
-    }
-
     pub fn contains(&self, point: Point) -> bool {
         self.tiles.contains(&point)
     }
