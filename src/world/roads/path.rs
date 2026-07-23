@@ -79,10 +79,10 @@ impl Pathfinder {
             point: start,
             cost: 0,
             priority: 0,
-            direction: Direction::None,
+            direction: preferred_direction,
         });
 
-        cost_so_far.insert((start, Direction::None), 0);
+        cost_so_far.insert((start, preferred_direction), 0);
 
         let mut visited: HashSet<(Point, Direction)> = HashSet::new();
 
