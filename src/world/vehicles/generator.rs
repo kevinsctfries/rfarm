@@ -28,7 +28,11 @@ impl VehicleGenerator {
         vehicles
     }
 
-    fn choose_initial_direction(road: &Road, point: Point, rng: &mut impl RngExt) -> Direction {
+    pub fn spawn_at_exit(point: Point, direction: Direction) -> Vehicle {
+        Vehicle::new(point, direction)
+    }
+
+    pub fn choose_initial_direction(road: &Road, point: Point, rng: &mut impl RngExt) -> Direction {
         let mut directions = Vec::new();
 
         for neighbor in point.orthogonal_neighbors() {

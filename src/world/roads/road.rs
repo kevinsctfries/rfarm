@@ -179,6 +179,17 @@ impl Road {
             }
         }
     }
+
+    pub fn border_exits(&self) -> Vec<Point> {
+        self.border_exits.iter().copied().collect()
+    }
+
+    pub fn connections(&self) -> Vec<(Point, Vec<Point>)> {
+        self.tiles
+            .iter()
+            .map(|(point, connection)| (*point, connection.neighbors(*point)))
+            .collect()
+    }
 }
 
 impl Feature for Road {

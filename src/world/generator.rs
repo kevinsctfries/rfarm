@@ -31,7 +31,7 @@ impl WorldGenerator {
         // Vehicles need roads
         let vehicles = VehicleGenerator::generate(&roads, 5, &mut rng);
 
-        let mut map = Map::new(width, height);
+        let mut map = Map::new(width, height, seed.0);
 
         // Feature priority:
         // Roads overwrite rivers visually.

@@ -1,7 +1,12 @@
+use rand::RngExt;
+use rand::SeedableRng;
+use rand_chacha::ChaCha8Rng;
+
 use super::feature::Feature;
 use super::geometry::point::Point;
 use super::land_parcel::LandParcel;
 use super::roads::road::Road;
+use super::vehicles::generator::VehicleGenerator;
 use super::vehicles::vehicle::{Direction, Vehicle};
 
 pub struct Map {
@@ -13,16 +18,19 @@ pub struct Map {
     pub parcels: Vec<LandParcel>,
 
     pub vehicles: Vec<Vehicle>,
+
+    rng: ChaCha8Rng,
 }
 
 impl Map {
-    pub fn new(width: u32, height: u32) -> Map {
+    pub fn new(width: u32, height: u32, seed: u64) -> Map {
         Map {
             width,
             height,
             features: Vec::new(),
             parcels: Vec::new(),
             vehicles: Vec::new(),
+            rng: ChaCha8Rng::seed_from_u64(seed),
         }
     }
 
@@ -65,12 +73,16 @@ impl Map {
     }
 
     pub fn update_vehicles(&mut self) {
-        let road_tiles = match self.road() {
-            Some(road) => road.points(),
+        let road = match self.road() {
+            Some(road) => road,
             None => return,
         };
 
-        for vehicle in &mut self.vehicles {
+        let road_tiles = road.points();
+
+        let mut remove = Vec::new();
+
+        for (index, vehicle) in self.vehicles.iter_mut().enumerate() {
             let mut options = Vec::new();
 
             for neighbor in vehicle.position.orthogonal_neighbors() {
@@ -78,7 +90,6 @@ impl Map {
                     continue;
                 }
 
-                // Prevent immediately reversing direction.
                 if let Some(previous) = vehicle.previous {
                     if neighbor == previous {
                         continue;
@@ -89,6 +100,7 @@ impl Map {
             }
 
             if options.is_empty() {
+                remove.push(index);
                 continue;
             }
 
@@ -96,7 +108,6 @@ impl Map {
 
             let mut next = options[0];
 
-            // Prefer continuing straight.
             for option in &options {
                 match vehicle.direction {
                     Direction::North if option.y < current.y => {
@@ -123,7 +134,6 @@ impl Map {
                 }
             }
 
-            // Update direction based on actual movement.
             let new_direction = if next.x > current.x {
                 Direction::East
             } else if next.x < current.x {
@@ -135,49 +145,40 @@ impl Map {
             };
 
             vehicle.set_direction(new_direction);
-
             vehicle.move_to(next);
-        }
-    }
 
-    fn next_vehicle_position(&self, vehicle: &Vehicle, road: &Road) -> Option<Point> {
-        let mut options = Vec::new();
-
-        for neighbor in vehicle.position.orthogonal_neighbors() {
-            if !road.contains(neighbor) {
-                continue;
-            }
-
-            // Prevent immediately reversing direction.
-            if let Some(previous) = vehicle.previous {
-                if neighbor == previous {
-                    continue;
-                }
-            }
-
-            options.push(neighbor);
-        }
-
-        if options.is_empty() {
-            return None;
-        }
-
-        // Prefer continuing straight.
-        for option in &options {
-            match vehicle.direction {
-                Direction::North if option.y < vehicle.position.y => return Some(*option),
-
-                Direction::South if option.y > vehicle.position.y => return Some(*option),
-
-                Direction::East if option.x > vehicle.position.x => return Some(*option),
-
-                Direction::West if option.x < vehicle.position.x => return Some(*option),
-
-                _ => {}
+            if next.x < 0
+                || next.y < 0
+                || next.x >= self.width as i32
+                || next.y >= self.height as i32
+            {
+                remove.push(index);
             }
         }
 
-        // Otherwise choose a turn.
-        Some(options[0])
+        for index in remove.into_iter().rev() {
+            self.vehicles.remove(index);
+        }
+
+        if self.rng.random_range(0..100) < 10 {
+            let exits = match self.road() {
+                Some(road) => road.border_exits(),
+                None => Vec::new(),
+            };
+
+            if !exits.is_empty() {
+                let exit = exits[self.rng.random_range(0..exits.len())];
+
+                let direction = match (exit.x, exit.y, self.width as i32, self.height as i32) {
+                    (0, _, _, _) => Direction::East,
+                    (x, _, width, _) if x == width - 1 => Direction::West,
+                    (_, 0, _, _) => Direction::South,
+                    (_, y, _, height) if y == height - 1 => Direction::North,
+                    _ => Direction::East,
+                };
+
+                self.vehicles.push(Vehicle::new(exit, direction));
+            }
+        }
     }
 }
