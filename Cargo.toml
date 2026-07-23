@@ -1,0 +1,10 @@
+[package]
+name = "rfarm"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+
+[[bin]]
+name = "rfarm"
+path = "src/main.rs"
