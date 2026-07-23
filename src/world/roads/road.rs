@@ -3,16 +3,16 @@ use std::collections::HashMap;
 use crate::world::feature::Feature;
 use crate::world::geometry::point::Point;
 
-#[derive(Clone, Copy, Debug)]
-pub struct RoadConnection {
-    pub north: bool,
-    pub south: bool,
-    pub east: bool,
-    pub west: bool,
+#[derive(Clone, Copy)]
+struct RoadConnection {
+    north: bool,
+    south: bool,
+    east: bool,
+    west: bool,
 }
 
 impl RoadConnection {
-    pub fn empty() -> Self {
+    fn new() -> Self {
         Self {
             north: false,
             south: false,
@@ -21,33 +21,25 @@ impl RoadConnection {
         }
     }
 
-    pub fn symbol(&self) -> char {
+    fn symbol(&self) -> char {
         match (self.north, self.south, self.east, self.west) {
-            // straight roads
             (true, true, false, false) => '┃',
             (false, false, true, true) => '━',
 
-            // endpoints
-            (true, false, false, false) => '╹',
-            (false, true, false, false) => '╻',
-            (false, false, true, false) => '╺',
-            (false, false, false, true) => '╸',
-
-            // intersections
-            (true, true, true, true) => '╋',
-
-            // three-way intersections
-            (false, true, true, true) => '┳',
-            (true, false, true, true) => '┻',
-            (true, true, false, true) => '┫',
-            (true, true, true, false) => '┣',
-
-            // corners
             (false, true, true, false) => '┏',
             (false, true, false, true) => '┓',
             (true, false, true, false) => '┗',
             (true, false, false, true) => '┛',
 
+            (true, true, true, false) => '┣',
+            (true, true, false, true) => '┫',
+            (true, false, true, true) => '┻',
+            (false, true, true, true) => '┳',
+
+            (true, true, true, true) => '╋',
+
+            // These are only true dead ends inside the map.
+            // Border exits are handled in symbol_at().
             _ => ' ',
         }
     }
@@ -55,24 +47,23 @@ impl RoadConnection {
 
 pub struct Road {
     pub tiles: HashMap<Point, RoadConnection>,
+
+    pub width: i32,
+    pub height: i32,
 }
 
 impl Road {
-    pub fn new() -> Self {
-        Self {
+    pub fn new(width: u32, height: u32) -> Road {
+        Road {
             tiles: HashMap::new(),
+            width: width as i32,
+            height: height as i32,
         }
     }
 
     pub fn add_segment(&mut self, point: Point) {
-        println!("ADDING ROAD {:?}", point);
+        self.tiles.entry(point).or_insert(RoadConnection::new());
 
-        self.tiles.entry(point).or_insert(RoadConnection::empty());
-
-        self.update_neighbors(point);
-    }
-
-    fn update_neighbors(&mut self, point: Point) {
         let neighbors = [
             (
                 Point {
@@ -90,14 +81,14 @@ impl Road {
             ),
             (
                 Point {
-                    x: point.x - 1,
+                    x: point.x + 1,
                     y: point.y,
                 },
                 2,
             ),
             (
                 Point {
-                    x: point.x + 1,
+                    x: point.x - 1,
                     y: point.y,
                 },
                 3,
@@ -110,57 +101,29 @@ impl Road {
             }
 
             match direction {
-                // neighbor is north
                 0 => {
                     self.tiles.get_mut(&point).unwrap().north = true;
                     self.tiles.get_mut(&neighbor).unwrap().south = true;
                 }
 
-                // neighbor is south
                 1 => {
                     self.tiles.get_mut(&point).unwrap().south = true;
                     self.tiles.get_mut(&neighbor).unwrap().north = true;
                 }
 
-                // neighbor is west
                 2 => {
-                    self.tiles.get_mut(&point).unwrap().west = true;
-                    self.tiles.get_mut(&neighbor).unwrap().east = true;
-                }
-
-                // neighbor is east
-                3 => {
                     self.tiles.get_mut(&point).unwrap().east = true;
                     self.tiles.get_mut(&neighbor).unwrap().west = true;
+                }
+
+                3 => {
+                    self.tiles.get_mut(&point).unwrap().west = true;
+                    self.tiles.get_mut(&neighbor).unwrap().east = true;
                 }
 
                 _ => {}
             }
         }
-    }
-
-    pub fn symbol_at(&self, point: Point) -> Option<char> {
-        self.tiles.get(&point).map(|road| {
-            let mut connection = *road;
-
-            if point.x == 0 {
-                connection.west = true;
-            }
-
-            if point.x == 79 {
-                connection.east = true;
-            }
-
-            if point.y == 0 {
-                connection.north = true;
-            }
-
-            if point.y == 39 {
-                connection.south = true;
-            }
-
-            connection.symbol()
-        })
     }
 }
 
@@ -174,7 +137,28 @@ impl Feature for Road {
     }
 
     fn symbol_at(&self, point: Point) -> Option<char> {
-        self.symbol_at(point)
+        let mut connection = *self.tiles.get(&point)?;
+
+        //
+        // Fake outside-world connections.
+        //
+        if point.x == 0 {
+            connection.west = true;
+        }
+
+        if point.x == self.width - 1 {
+            connection.east = true;
+        }
+
+        if point.y == 0 {
+            connection.north = true;
+        }
+
+        if point.y == self.height - 1 {
+            connection.south = true;
+        }
+
+        Some(connection.symbol())
     }
 
     fn priority(&self) -> u32 {

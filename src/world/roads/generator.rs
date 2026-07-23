@@ -1,33 +1,51 @@
-use rand::RngExt;
-
 use crate::world::geometry::point::Point;
+use crate::world::terrain::river::River;
 
+use super::path::{Direction, Pathfinder};
 use super::road::Road;
 
 pub struct RoadGenerator;
 
 impl RoadGenerator {
-    pub fn generate(width: u32, height: u32, rng: &mut impl RngExt) -> Road {
-        let mut road = Road::new();
+    pub fn generate(width: u32, height: u32, river: &River, rng: &mut impl rand::RngExt) -> Road {
+        let mut road = Road::new(width, height);
 
-        // horizontal arterial
-        let horizontal_y = rng.random_range(5..height - 5) as i32;
+        // Horizontal arterial
+        let y = rng.random_range(3..height - 3) as i32;
 
-        for x in 0..width {
-            road.add_segment(Point {
-                x: x as i32,
-                y: horizontal_y,
-            });
+        let path = Pathfinder::find_path(
+            width,
+            height,
+            Point { x: 0, y },
+            Point {
+                x: width as i32 - 1,
+                y,
+            },
+            river,
+            Direction::East,
+        );
+
+        for point in path {
+            road.add_segment(point);
         }
 
-        // vertical arterial
-        let vertical_x = rng.random_range(5..width - 5) as i32;
+        // Vertical arterial
+        let x = rng.random_range(3..width - 3) as i32;
 
-        for y in 0..height {
-            road.add_segment(Point {
-                x: vertical_x,
-                y: y as i32,
-            });
+        let path = Pathfinder::find_path(
+            width,
+            height,
+            Point { x, y: 0 },
+            Point {
+                x,
+                y: height as i32 - 1,
+            },
+            river,
+            Direction::South,
+        );
+
+        for point in path {
+            road.add_segment(point);
         }
 
         road

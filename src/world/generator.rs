@@ -21,24 +21,23 @@ impl WorldGenerator {
     pub fn generate(width: u32, height: u32, seed: Seed) -> Map {
         let mut rng = ChaCha8Rng::seed_from_u64(seed.0);
 
-        // Generate terrain
+        // Terrain first
         let river = River::generate(width, height, &mut rng);
 
-        // Generate arterial roads
-        let roads = RoadGenerator::generate(width, height, &mut rng);
+        // Roads need terrain information
+        let roads = RoadGenerator::generate(width, height, &river, &mut rng);
 
         let mut map = Map::new(width, height);
 
-        // Add world features
-        // Priority determines rendering order.
-        // Roads will overwrite rivers.
+        // Feature priority:
+        // Roads overwrite rivers visually.
         map.add_feature(Box::new(river));
 
         let regions = LandRegion::generate(&map);
 
         map.add_feature(Box::new(roads));
 
-        // Total farms in the entire world
+        // Generate farms
         let mut remaining_parcels = rng.random_range(MIN_WORLD_PARCELS..=MAX_WORLD_PARCELS);
 
         let mut next_parcel_id = 0;
@@ -48,7 +47,6 @@ impl WorldGenerator {
                 break;
             }
 
-            // Give this region some farms
             let region_parcels = remaining_parcels.min(rng.random_range(1..=remaining_parcels));
 
             let parcels =
