@@ -11,4 +11,31 @@ impl Point {
 
         (dx * dx + dy * dy).sqrt()
     }
+
+    // The four orthogonally adjacent points (east, west, south, north).
+    pub fn orthogonal_neighbors(&self) -> [Point; 4] {
+        [
+            Point {
+                x: self.x + 1,
+                y: self.y,
+            },
+            Point {
+                x: self.x - 1,
+                y: self.y,
+            },
+            Point {
+                x: self.x,
+                y: self.y + 1,
+            },
+            Point {
+                x: self.x,
+                y: self.y - 1,
+            },
+        ]
+    }
+
+    // Whether this point falls within a 0..width by 0..height grid.
+    pub fn in_bounds(&self, width: u32, height: u32) -> bool {
+        self.x >= 0 && self.y >= 0 && self.x < width as i32 && self.y < height as i32
+    }
 }

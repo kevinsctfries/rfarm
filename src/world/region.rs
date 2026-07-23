@@ -47,44 +47,21 @@ impl LandRegion {
         while let Some(point) = queue.pop_front() {
             tiles.push(point);
 
-            let neighbours = [
-                Point {
-                    x: point.x + 1,
-                    y: point.y,
-                },
-                Point {
-                    x: point.x - 1,
-                    y: point.y,
-                },
-                Point {
-                    x: point.x,
-                    y: point.y + 1,
-                },
-                Point {
-                    x: point.x,
-                    y: point.y - 1,
-                },
-            ];
-
-            for neighbour in neighbours {
-                if neighbour.x < 0
-                    || neighbour.y < 0
-                    || neighbour.x >= map.width as i32
-                    || neighbour.y >= map.height as i32
-                {
+            for neighbor in point.orthogonal_neighbors() {
+                if !neighbor.in_bounds(map.width, map.height) {
                     continue;
                 }
 
-                if visited.contains(&neighbour) {
+                if visited.contains(&neighbor) {
                     continue;
                 }
 
-                if map.is_occupied(neighbour) {
+                if map.is_occupied(neighbor) {
                     continue;
                 }
 
-                visited.insert(neighbour);
-                queue.push_back(neighbour);
+                visited.insert(neighbor);
+                queue.push_back(neighbor);
             }
         }
 

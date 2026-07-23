@@ -99,8 +99,8 @@ impl Pathfinder {
                 return reconstruct(came_from, state, start);
             }
 
-            for next in neighbors(current.point) {
-                if next.x < 0 || next.y < 0 || next.x >= width as i32 || next.y >= height as i32 {
+            for next in current.point.orthogonal_neighbors() {
+                if !next.in_bounds(width, height) {
                     continue;
                 }
 
@@ -145,27 +145,6 @@ impl Pathfinder {
 
         Vec::new()
     }
-}
-
-fn neighbors(point: Point) -> Vec<Point> {
-    vec![
-        Point {
-            x: point.x + 1,
-            y: point.y,
-        },
-        Point {
-            x: point.x - 1,
-            y: point.y,
-        },
-        Point {
-            x: point.x,
-            y: point.y + 1,
-        },
-        Point {
-            x: point.x,
-            y: point.y - 1,
-        },
-    ]
 }
 
 fn reconstruct(

@@ -173,27 +173,8 @@ impl ParcelGenerator {
 
         for (index, parcel) in parcels.iter().enumerate() {
             for tile in parcel {
-                let neighbours = [
-                    Point {
-                        x: tile.x + 1,
-                        y: tile.y,
-                    },
-                    Point {
-                        x: tile.x - 1,
-                        y: tile.y,
-                    },
-                    Point {
-                        x: tile.x,
-                        y: tile.y + 1,
-                    },
-                    Point {
-                        x: tile.x,
-                        y: tile.y - 1,
-                    },
-                ];
-
-                for neighbour in neighbours {
-                    let Some(owner) = ownership.get(&neighbour) else {
+                for neighbor in tile.orthogonal_neighbors() {
+                    let Some(owner) = ownership.get(&neighbor) else {
                         continue;
                     };
 
@@ -216,24 +197,7 @@ impl ParcelGenerator {
         let mut neighbors = HashSet::new();
 
         for tile in &parcels[parcel_index] {
-            let adjacent = [
-                Point {
-                    x: tile.x + 1,
-                    y: tile.y,
-                },
-                Point {
-                    x: tile.x - 1,
-                    y: tile.y,
-                },
-                Point {
-                    x: tile.x,
-                    y: tile.y + 1,
-                },
-                Point {
-                    x: tile.x,
-                    y: tile.y - 1,
-                },
-            ];
+            let adjacent = tile.orthogonal_neighbors();
 
             for (index, other) in parcels.iter().enumerate() {
                 if index == parcel_index {
