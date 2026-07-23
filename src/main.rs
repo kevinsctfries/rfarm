@@ -1,17 +1,23 @@
-mod crop;
-mod farm;
+mod world;
 
-use farm::Farm;
-use std::{thread, time::Duration};
+use std::env;
+
+use world::generator::WorldGenerator;
+use world::renderer::Renderer;
+use world::seed::Seed;
 
 fn main() {
-    let mut farm = Farm::new();
+    let args: Vec<String> = env::args().collect();
 
-    loop {
-        farm.tick();
+    let seed = if args.len() > 1 && args[1] == "new" {
+        Seed::generate_new()
+    } else {
+        Seed::load_or_generate()
+    };
 
-        println!("Age: {} | Height: {}", farm.crop.age, farm.crop.height);
+    println!("Using world seed: {}", seed.0);
 
-        thread::sleep(Duration::from_secs(1));
-    }
+    let map = WorldGenerator::generate(80, 40, seed);
+
+    Renderer::render(&map);
 }
