@@ -24,19 +24,17 @@ impl Seed {
     }
 
     pub fn generate() -> Seed {
-        let seed = rand::rng().random::<u64>();
-
-        fs::write(SEED_FILE, seed.to_string()).expect("Failed to save seed");
-
-        println!("Generated new world seed: {}", seed);
-
-        Seed(seed)
+        Self::create()
     }
 
     pub fn generate_new() -> Seed {
+        Self::create()
+    }
+
+    fn create() -> Seed {
         let seed = rand::rng().random::<u64>();
 
-        fs::write(SEED_FILE, seed.to_string()).expect("Failed to save new seed");
+        fs::write(SEED_FILE, seed.to_string()).expect("Failed to save seed");
 
         println!("Generated new world seed: {}", seed);
 
