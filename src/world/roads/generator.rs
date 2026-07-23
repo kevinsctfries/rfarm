@@ -14,9 +14,23 @@ impl RoadGenerator {
         let height = height as i32;
 
         // Horizontal arterial
-        let y = rng.random_range(3..height - 3);
+        let y = loop {
+            let candidate = rng.random_range(3..height - 3) as i32;
 
-        // Force border connections
+            let west_exit = Point { x: 0, y: candidate };
+
+            let east_exit = Point {
+                x: width - 1,
+                y: candidate,
+            };
+
+            if !too_close_to_river_endpoint(west_exit, river)
+                && !too_close_to_river_endpoint(east_exit, river)
+            {
+                break candidate;
+            }
+        };
+
         let west_exit = Point { x: 0, y };
         let west_inside = Point { x: 1, y };
 
@@ -24,7 +38,7 @@ impl RoadGenerator {
 
         let east_exit = Point { x: width - 1, y };
 
-        // Guaranteed straight entrances
+        // Guaranteed straight map entrance
         road.add_segment(west_exit);
         road.add_segment(west_inside);
 
@@ -41,6 +55,7 @@ impl RoadGenerator {
             road.add_segment(point);
         }
 
+        // Guaranteed straight map exit
         road.add_segment(east_inside);
         road.add_segment(east_exit);
 
@@ -48,7 +63,22 @@ impl RoadGenerator {
         road.mark_border_exit(east_exit);
 
         // Vertical arterial
-        let x = rng.random_range(3..width - 3);
+        let x = loop {
+            let candidate = rng.random_range(3..width - 3) as i32;
+
+            let north_exit = Point { x: candidate, y: 0 };
+
+            let south_exit = Point {
+                x: candidate,
+                y: height - 1,
+            };
+
+            if !too_close_to_river_endpoint(north_exit, river)
+                && !too_close_to_river_endpoint(south_exit, river)
+            {
+                break candidate;
+            }
+        };
 
         let north_exit = Point { x, y: 0 };
         let north_inside = Point { x, y: 1 };
@@ -57,6 +87,7 @@ impl RoadGenerator {
 
         let south_exit = Point { x, y: height - 1 };
 
+        // Guaranteed straight map entrance
         road.add_segment(north_exit);
         road.add_segment(north_inside);
 
@@ -73,6 +104,7 @@ impl RoadGenerator {
             road.add_segment(point);
         }
 
+        // Guaranteed straight map exit
         road.add_segment(south_inside);
         road.add_segment(south_exit);
 
@@ -81,4 +113,10 @@ impl RoadGenerator {
 
         road
     }
+}
+
+fn too_close_to_river_endpoint(point: Point, river: &River) -> bool {
+    const MIN_DISTANCE: f32 = 6.0;
+
+    point.distance_to(river.source) < MIN_DISTANCE || point.distance_to(river.mouth) < MIN_DISTANCE
 }
