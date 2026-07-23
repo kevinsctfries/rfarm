@@ -52,15 +52,11 @@ impl River {
             mouth,
         }
     }
-
-    pub fn contains_point(&self, point: Point) -> bool {
-        self.path.distance_to(point) <= self.width
-    }
 }
 
 impl Feature for River {
     fn contains(&self, point: Point) -> bool {
-        self.contains_point(point)
+        self.path.distance_to(point) <= self.width
     }
 
     fn is_border(&self, point: Point) -> bool {
