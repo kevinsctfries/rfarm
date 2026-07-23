@@ -1,7 +1,10 @@
 mod world;
 
 use std::env;
+use std::thread;
+use std::time::Duration;
 
+use std::io::{self, Write};
 use world::generator::WorldGenerator;
 use world::renderer::Renderer;
 use world::seed::Seed;
@@ -17,7 +20,16 @@ fn main() {
 
     println!("Using world seed: {}", seed.0);
 
-    let map = WorldGenerator::generate(80, 40, seed);
+    let mut map = WorldGenerator::generate(80, 40, seed);
 
-    Renderer::render(&map);
+    loop {
+        print!("\x1b[?25h");
+        io::stdout().flush().unwrap();
+
+        Renderer::render(&map);
+
+        map.update_vehicles();
+
+        thread::sleep(Duration::from_millis(500));
+    }
 }

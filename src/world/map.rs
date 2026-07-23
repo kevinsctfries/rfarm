@@ -1,6 +1,8 @@
 use super::feature::Feature;
 use super::geometry::point::Point;
 use super::land_parcel::LandParcel;
+use super::roads::road::Road;
+use super::vehicles::vehicle::{Direction, Vehicle};
 
 pub struct Map {
     pub width: u32,
@@ -9,6 +11,8 @@ pub struct Map {
     pub features: Vec<Box<dyn Feature>>,
 
     pub parcels: Vec<LandParcel>,
+
+    pub vehicles: Vec<Vehicle>,
 }
 
 impl Map {
@@ -18,6 +22,7 @@ impl Map {
             height,
             features: Vec::new(),
             parcels: Vec::new(),
+            vehicles: Vec::new(),
         }
     }
 
@@ -47,5 +52,89 @@ impl Map {
         }
 
         None
+    }
+
+    pub fn road(&self) -> Option<&Road> {
+        for feature in &self.features {
+            if let Some(road) = feature.as_any().downcast_ref::<Road>() {
+                return Some(road);
+            }
+        }
+
+        None
+    }
+
+    pub fn update_vehicles(&mut self) {
+        let road_tiles = match self.road() {
+            Some(road) => road.points(),
+            None => return,
+        };
+
+        for vehicle in &mut self.vehicles {
+            let mut options = Vec::new();
+
+            for neighbor in vehicle.position.orthogonal_neighbors() {
+                if !road_tiles.contains(&neighbor) {
+                    continue;
+                }
+
+                if let Some(previous) = vehicle.previous {
+                    if neighbor == previous {
+                        continue;
+                    }
+                }
+
+                options.push(neighbor);
+            }
+
+            if options.is_empty() {
+                continue;
+            }
+
+            let next = options[0];
+
+            vehicle.move_to(next);
+        }
+    }
+
+    fn next_vehicle_position(&self, vehicle: &Vehicle, road: &Road) -> Option<Point> {
+        let mut options = Vec::new();
+
+        for neighbor in vehicle.position.orthogonal_neighbors() {
+            if !road.contains(neighbor) {
+                continue;
+            }
+
+            // Prevent immediately reversing direction.
+            if let Some(previous) = vehicle.previous {
+                if neighbor == previous {
+                    continue;
+                }
+            }
+
+            options.push(neighbor);
+        }
+
+        if options.is_empty() {
+            return None;
+        }
+
+        // Prefer continuing straight.
+        for option in &options {
+            match vehicle.direction {
+                Direction::North if option.y < vehicle.position.y => return Some(*option),
+
+                Direction::South if option.y > vehicle.position.y => return Some(*option),
+
+                Direction::East if option.x > vehicle.position.x => return Some(*option),
+
+                Direction::West if option.x < vehicle.position.x => return Some(*option),
+
+                _ => {}
+            }
+        }
+
+        // Otherwise choose a turn.
+        Some(options[0])
     }
 }

@@ -55,6 +55,10 @@ impl River {
 }
 
 impl Feature for River {
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+
     fn contains(&self, point: Point) -> bool {
         self.path.distance_to(point) <= self.width
     }

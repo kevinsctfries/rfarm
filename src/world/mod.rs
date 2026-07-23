@@ -13,3 +13,4 @@ pub mod geometry;
 pub mod land_parcel;
 pub mod parcel_generator;
 pub mod region;
+pub mod vehicles;

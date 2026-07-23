@@ -6,12 +6,12 @@ use super::farm_names::FarmNameGenerator;
 use super::map::Map;
 use super::seed::Seed;
 
-use super::terrain::river::River;
-
 use super::roads::generator::RoadGenerator;
+use super::terrain::river::River;
 
 use super::parcel_generator::ParcelGenerator;
 use super::region::LandRegion;
+use super::vehicles::generator::VehicleGenerator;
 
 const MIN_WORLD_PARCELS: usize = 6;
 const MAX_WORLD_PARCELS: usize = 8;
@@ -28,6 +28,9 @@ impl WorldGenerator {
         // Roads need terrain information
         let roads = RoadGenerator::generate(width, height, &river, &mut rng);
 
+        // Vehicles need roads
+        let vehicles = VehicleGenerator::generate(&roads, 5, &mut rng);
+
         let mut map = Map::new(width, height);
 
         // Feature priority:
@@ -37,6 +40,8 @@ impl WorldGenerator {
         let regions = LandRegion::generate(&map);
 
         map.add_feature(Box::new(roads));
+
+        map.vehicles = vehicles;
 
         // Generate farms
         let farm_names = FarmNameGenerator::load();

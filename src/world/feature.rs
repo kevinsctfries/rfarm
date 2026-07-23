@@ -8,4 +8,6 @@ pub trait Feature {
     fn symbol_at(&self, point: Point) -> Option<char>;
 
     fn priority(&self) -> u32;
+
+    fn as_any(&self) -> &dyn std::any::Any;
 }

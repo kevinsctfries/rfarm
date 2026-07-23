@@ -21,6 +21,40 @@ impl RoadConnection {
         }
     }
 
+    fn neighbors(&self, point: Point) -> Vec<Point> {
+        let mut result = Vec::new();
+
+        if self.north {
+            result.push(Point {
+                x: point.x,
+                y: point.y - 1,
+            });
+        }
+
+        if self.south {
+            result.push(Point {
+                x: point.x,
+                y: point.y + 1,
+            });
+        }
+
+        if self.east {
+            result.push(Point {
+                x: point.x + 1,
+                y: point.y,
+            });
+        }
+
+        if self.west {
+            result.push(Point {
+                x: point.x - 1,
+                y: point.y,
+            });
+        }
+
+        result
+    }
+
     fn symbol(&self) -> char {
         match (self.north, self.south, self.east, self.west) {
             (true, true, false, false) => '┃',
@@ -38,24 +72,17 @@ impl RoadConnection {
 
             (true, true, true, true) => '╋',
 
-            // These are only true dead ends inside the map.
-            // Border exits are handled in symbol_at().
             _ => ' ',
         }
     }
 }
 
 pub struct Road {
-    pub tiles: HashMap<Point, RoadConnection>,
+    tiles: HashMap<Point, RoadConnection>,
 
     pub width: i32,
     pub height: i32,
 
-    // Points where a road is meant to visibly continue past the map edge.
-    // Only these points get a faked "outside the map" connection when
-    // rendered - see symbol_at(). Without this, any tile that merely
-    // happens to touch the border (e.g. a path briefly running alongside
-    // an edge) would incorrectly render as if it exited the map there too.
     border_exits: HashSet<Point>,
 }
 
@@ -69,9 +96,21 @@ impl Road {
         }
     }
 
-    // Mark a point as a genuine border exit for this road (e.g. the start
-    // or end of an arterial), rather than a tile that just happens to sit
-    // on the map's edge while passing through.
+    pub fn contains(&self, point: Point) -> bool {
+        self.tiles.contains_key(&point)
+    }
+
+    pub fn points(&self) -> Vec<Point> {
+        self.tiles.keys().copied().collect()
+    }
+
+    pub fn neighbors(&self, point: Point) -> Vec<Point> {
+        match self.tiles.get(&point) {
+            Some(connection) => connection.neighbors(point),
+            None => Vec::new(),
+        }
+    }
+
     pub fn mark_border_exit(&mut self, point: Point) {
         self.border_exits.insert(point);
     }
@@ -143,6 +182,10 @@ impl Road {
 }
 
 impl Feature for Road {
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+
     fn contains(&self, point: Point) -> bool {
         self.tiles.contains_key(&point)
     }
@@ -154,8 +197,6 @@ impl Feature for Road {
     fn symbol_at(&self, point: Point) -> Option<char> {
         let mut connection = *self.tiles.get(&point)?;
 
-        // Fake outside-world connections, but only at genuine border exits -
-        // not every tile that happens to touch the map's edge.
         if self.border_exits.contains(&point) {
             if point.x == 0 {
                 connection.west = true;
