@@ -1,21 +1,15 @@
+use super::farm_names::FarmNameGenerator;
 use super::geometry::point::Point;
 use super::land_parcel::LandParcel;
 use super::region::LandRegion;
 
 use rand::RngExt;
-use serde::Deserialize;
 use std::collections::{HashMap, HashSet};
 
 const MIN_PARCEL_WIDTH: i32 = 10;
 const MIN_PARCEL_HEIGHT: i32 = 10;
 
 const RELAXATION_STEPS: usize = 5;
-
-#[derive(Deserialize)]
-struct FarmNames {
-    prefixes: Vec<String>,
-    suffixes: Vec<String>,
-}
 
 pub struct ParcelGenerator;
 
@@ -25,6 +19,7 @@ impl ParcelGenerator {
         rng: &mut impl RngExt,
         next_id: &mut u64,
         parcel_count: usize,
+        farm_names: &FarmNameGenerator,
     ) -> Vec<LandParcel> {
         let mut parcels = Vec::new();
 
@@ -120,7 +115,7 @@ impl ParcelGenerator {
 
             // Generate names until one can be placed.
             loop {
-                let farm_name = Self::generate_farm_name(rng);
+                let farm_name = farm_names.generate(rng);
 
                 let parcel = LandParcel::new(id, tile_set.clone(), farm_name, parcel_seed);
 
@@ -132,23 +127,6 @@ impl ParcelGenerator {
         }
 
         parcels
-    }
-
-    // Load farm names from JSON.
-    fn load_farm_names() -> FarmNames {
-        serde_json::from_str(include_str!("../data/farm_names.json"))
-            .expect("Failed to parse farm_names.json")
-    }
-
-    // Generate farm name.
-    fn generate_farm_name(rng: &mut impl RngExt) -> String {
-        let names = Self::load_farm_names();
-
-        let prefix = &names.prefixes[rng.random_range(0..names.prefixes.len())];
-
-        let suffix = &names.suffixes[rng.random_range(0..names.suffixes.len())];
-
-        format!("{} {}", prefix, suffix)
     }
 
     // Assign tiles to nearest seed

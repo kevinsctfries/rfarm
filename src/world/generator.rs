@@ -2,6 +2,7 @@ use rand::RngExt;
 use rand::SeedableRng;
 use rand_chacha::ChaCha8Rng;
 
+use super::farm_names::FarmNameGenerator;
 use super::map::Map;
 use super::seed::Seed;
 
@@ -38,6 +39,8 @@ impl WorldGenerator {
         map.add_feature(Box::new(roads));
 
         // Generate farms
+        let farm_names = FarmNameGenerator::load();
+
         let mut remaining_parcels = rng.random_range(MIN_WORLD_PARCELS..=MAX_WORLD_PARCELS);
 
         let mut next_parcel_id = 0;
@@ -49,8 +52,13 @@ impl WorldGenerator {
 
             let region_parcels = remaining_parcels.min(rng.random_range(1..=remaining_parcels));
 
-            let parcels =
-                ParcelGenerator::generate(region, &mut rng, &mut next_parcel_id, region_parcels);
+            let parcels = ParcelGenerator::generate(
+                region,
+                &mut rng,
+                &mut next_parcel_id,
+                region_parcels,
+                &farm_names,
+            );
 
             remaining_parcels = remaining_parcels.saturating_sub(parcels.len());
 

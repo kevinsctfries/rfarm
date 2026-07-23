@@ -7,6 +7,7 @@ pub mod terrain;
 
 pub mod roads;
 
+pub mod farm_names;
 pub mod feature;
 pub mod geometry;
 pub mod land_parcel;
