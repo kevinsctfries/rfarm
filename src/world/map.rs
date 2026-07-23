@@ -78,6 +78,7 @@ impl Map {
                     continue;
                 }
 
+                // Prevent immediately reversing direction.
                 if let Some(previous) = vehicle.previous {
                     if neighbor == previous {
                         continue;
@@ -91,7 +92,49 @@ impl Map {
                 continue;
             }
 
-            let next = options[0];
+            let current = vehicle.position;
+
+            let mut next = options[0];
+
+            // Prefer continuing straight.
+            for option in &options {
+                match vehicle.direction {
+                    Direction::North if option.y < current.y => {
+                        next = *option;
+                        break;
+                    }
+
+                    Direction::South if option.y > current.y => {
+                        next = *option;
+                        break;
+                    }
+
+                    Direction::East if option.x > current.x => {
+                        next = *option;
+                        break;
+                    }
+
+                    Direction::West if option.x < current.x => {
+                        next = *option;
+                        break;
+                    }
+
+                    _ => {}
+                }
+            }
+
+            // Update direction based on actual movement.
+            let new_direction = if next.x > current.x {
+                Direction::East
+            } else if next.x < current.x {
+                Direction::West
+            } else if next.y > current.y {
+                Direction::South
+            } else {
+                Direction::North
+            };
+
+            vehicle.set_direction(new_direction);
 
             vehicle.move_to(next);
         }
